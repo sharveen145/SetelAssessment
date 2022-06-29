@@ -2,25 +2,21 @@ import org.openqa.selenium.By;
 import org.openqa.selenium.NoSuchElementException;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.support.ui.ExpectedConditions;
+import org.openqa.selenium.support.ui.FluentWait;
+import org.openqa.selenium.support.ui.Wait;
 import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.time.Duration;
+import java.util.*;
 
 public class AmazonWebTestCase extends DriverFactory {
 
     WebDriver driver=null;
     String product = "iPhone 11";
-//    static Map<Float, String> map = new HashMap<>();
-    static Map<String, String> map = new HashMap<>();
-//    Wait<WebDriver> wait = new FluentWait<WebDriver>(driver)
-//            .withTimeout(Duration.ofSeconds(60))
-//            .pollingEvery(Duration.ofSeconds(2L))
-//            .ignoring(NoSuchElementException.class);
+    static Map<Float, String> map = new HashMap<>();
 
 
     @BeforeTest
@@ -28,39 +24,40 @@ public class AmazonWebTestCase extends DriverFactory {
         driver=DriverFactory.getDriver("chrome");
     }
 
-//    @Test
-//    public void openAmazon() {
-//        String url="https://www.amazon.com/";
-//        driver.get(url);
-//        if (!driver.getTitle().equalsIgnoreCase("Amazon.com. Spend less. Smile more."))
-//            throw new NoSuchElementException("Amazon page not launched.");
-//        System.out.println("Amazon page launched successfully.");
-//    }
-//    @Test(dependsOnMethods = "openAmazon")
-//    public void SearchAmazonItem() {
-//        driver.findElement(By.id("twotabsearchtextbox")).sendKeys(product);
-//        driver.findElement(By.id("nav-search-submit-button")).click();
-//    }
-//
-//    @Test(dependsOnMethods = "SearchAmazonItem")
-//    public void getAmazonItems() throws InterruptedException {
-//        List<WebElement> itemNames = driver.findElements(By
-//                .xpath("//span[contains(@class,'a-size-medium') and contains(@class,'a-text-normal')]/ancestor::a"));
-//        List<WebElement> itemPrices = driver.findElements(By
-//                .xpath("//span[@class='a-offscreen']/ancestor::span[@class='a-price']"));
-//        int itemNameCount = itemNames.size();
-//        for (int i = 0; i < itemNameCount; i++) {
-//            Thread.sleep(1000);
-//            String value = itemPrices.get(i).getText().replace("$", "").trim().replaceAll("\n", ".");
-////            float value2 = Float.valueOf(value);
-//            map.put(value,itemNames.get(i).getText());
-//        }
-//        System.out.println("The search result for "+ product +" from AMAZON Website: ");
-////        sortByKeys();
-//        }
-
     @Test
-//            (dependsOnMethods = "getAmazonItems")
+    public void openAmazon() {
+        String url="https://www.amazon.com/";
+        driver.get(url);
+        if (!driver.getTitle().equalsIgnoreCase("Amazon.com. Spend less. Smile more."))
+            throw new NoSuchElementException("Amazon page not launched.");
+        System.out.println("Amazon page launched successfully.");
+    }
+    @Test(dependsOnMethods = "openAmazon")
+    public void SearchAmazonItem() {
+        driver.findElement(By.id("twotabsearchtextbox")).sendKeys(product);
+        driver.findElement(By.id("nav-search-submit-button")).click();
+    }
+
+    @Test(dependsOnMethods = "SearchAmazonItem")
+    public void getAmazonItems() throws InterruptedException {
+        List<WebElement> itemNames2 = driver.findElements(By
+                .xpath("//span[contains(@class,'a-size-medium') and contains(@class,'a-text-normal')]/ancestor::a"));
+        List<WebElement> itemPrices2 = driver.findElements(By
+                .xpath("//span[@class='a-offscreen']/ancestor::span[@class='a-price']"));
+        int itemNameCount2 = itemNames2.size();
+        for (int i = 0; i < itemNameCount2; i++) {
+            Thread.sleep(1000);
+            String valueAmazon = itemPrices2.get(i).getText().replace("$", "").trim().replaceAll("\n", ".");
+            if (valueAmazon.contains(","))
+                valueAmazon = valueAmazon.replaceAll(",", "");
+            if (!valueAmazon.isEmpty()) {
+                float finalValue = Float.parseFloat(valueAmazon);
+                map.put(finalValue, itemNames2.get(i).getText());
+            }
+        }
+    }
+
+    @Test(dependsOnMethods = "getAmazonItems")
     public void navigateToLazada() {
         String url2="https://www.lazada.sg/";
         driver.get(url2);
@@ -73,7 +70,9 @@ public class AmazonWebTestCase extends DriverFactory {
     public void SearchLazadaItem() throws InterruptedException {
         WebElement searchBar = driver.findElement(By.id("q"));
         searchBar.sendKeys(product);
-      driver.findElement(By.xpath("//button[contains(@class,'search-box__button') and contains(text(),'SEARCH')]")).click();
+        driver.findElement(By.xpath("//button[contains(text(),'SEARCH')]")).click();
+        WebElement sortBy = driver.findElement(By.className("pI6oU"));
+        fluentWaitTillVisible(sortBy);
     }
 
     @Test(dependsOnMethods = "SearchLazadaItem")
@@ -85,12 +84,20 @@ public class AmazonWebTestCase extends DriverFactory {
         int itemNameCount = itemNames.size();
         for (int i = 0; i < itemNameCount; i++) {
             Thread.sleep(1000);
-            String value = itemPrices.get(i).getText().replace("$", "").trim();
-//            float value2 = Float.valueOf(value);
-            map.put(value,itemNames.get(i).getText());
+            String valueLazada = itemPrices.get(i).getText().replace("$", "").trim();
+            if (valueLazada.contains(","))
+                valueLazada = valueLazada.replaceAll(",", "");
+            if (!valueLazada.isEmpty()) {
+                float finalValue = Float.parseFloat(valueLazada);
+                map.put(finalValue, itemNames.get(i).getText());
+            }
         }
-        System.out.println("The search result for "+ product +" from Lazada Website: ");
-        }
+    }
+
+    @Test(dependsOnMethods = "getLazadaItems")
+    public void sortAndPrint() {
+        sortByKeys();
+    }
 
 
     @AfterTest
@@ -100,13 +107,17 @@ public class AmazonWebTestCase extends DriverFactory {
 
     public static void sortByKeys()
     {
-//        TreeMap<Float, String> sorted = new TreeMap<>(map);
-//        for (Map.Entry<Float, String> entry : sorted.entrySet())
-//            System.out.println("Name " + entry.getValue() + ", Price = $" + entry.getKey());
+        TreeMap<Float, String> sorted = new TreeMap<>(map);
+        for (Map.Entry<Float, String> entry : sorted.entrySet())
+            System.out.println("Name " + entry.getValue() + ", Price = $" + entry.getKey());
+    }
 
-        TreeMap<String, String> sorted = new TreeMap<>(map);
-        for (Map.Entry<String, String> entry : sorted.entrySet())
-            System.out.println("Name: " + entry.getValue() + ", Price: $" + entry.getKey());
+    public void fluentWaitTillVisible(WebElement by){
+        Wait<WebDriver> fluentWait = new FluentWait<WebDriver>(driver)
+                .withTimeout(Duration.ofSeconds(60))
+                .pollingEvery(Duration.ofSeconds(2))
+                .ignoring(NoSuchElementException.class);
+        fluentWait.until(ExpectedConditions.presenceOfElementLocated((By) by));
     }
 
 }
