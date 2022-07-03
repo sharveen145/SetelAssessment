@@ -67,7 +67,7 @@ public class AmazonWebTestCase extends DriverFactory {
     }
 
     @Test(dependsOnMethods = "navigateToLazada")
-    public void SearchLazadaItem() throws InterruptedException {
+    public void SearchLazadaItem() {
         WebElement searchBar = driver.findElement(By.id("q"));
         searchBar.sendKeys(product);
         driver.findElement(By.xpath("//button[contains(text(),'SEARCH')]")).click();
@@ -113,7 +113,7 @@ public class AmazonWebTestCase extends DriverFactory {
     }
 
     public void fluentWaitTillVisible(WebElement by){
-        Wait<WebDriver> fluentWait = new FluentWait<WebDriver>(driver)
+        Wait<WebDriver> fluentWait = new FluentWait<>(driver)
                 .withTimeout(Duration.ofSeconds(60))
                 .pollingEvery(Duration.ofSeconds(2))
                 .ignoring(NoSuchElementException.class);
